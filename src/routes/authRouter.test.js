@@ -23,29 +23,19 @@ test('login', async () => {
   expect(loginRes.body.user).toMatchObject(user);
 });
 
-// test('logout', async () => {
-//   const logoutRes = await request(app)
-//     .delete('/api/auth')
-//     .set('Authorization', `Bearer ${testUserAuthToken}`)
-//     .expect(200);
+test('logout', async () => {
+  const newUser = { name: 'lauri', email: 'gojazz@test.com', password: 'suomi' };
+  const registerRes = await request(app).post('/api/auth').send(newUser).expect(200);
+  // expect(registerRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+  lauriAuthToken = registerRes.body.token;
+  const logoutRes = await request(app)
+    .delete('/api/auth')
+    .set('Authorization', `Bearer ${lauriAuthToken}`)
+    .expect(200);
 
-//   expect(logoutRes.body.message).toBe('logout successful');
+  expect(logoutRes.body.message).toBe('logout successful');
 
-//   // const protectedRes = await request(app).get('/api/auth/protected-endpoint')
-//   //   .set('Authorization', `Bearer ${testUserAuthToken}`).expect(404);
+  const protectedRes = await request(app).get('/api/auth/protected-endpoint')
+    .set('Authorization', `Bearer ${lauriAuthToken}`).expect(404);
 
-//   // expect(protectedRes.body.message).toBe('unauthorized');
-// });
-
-
-
-
-//already covered the lines that do register...
-// test('register', async () => {
-//   const newUser = { name: 'lauri', email: 'gojazz@test.com', password: 'suomi' };
-
-//   const registerRes = await request(app).post('/api/auth').send(newUser).expect(200);
-//   expect(registerRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
-//   testUserAuthToken = registerRes.body.token;
-//   expect(testUserAuthToken).toMatch(registerRes.body.token);
-// });
+});
