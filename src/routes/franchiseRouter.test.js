@@ -47,4 +47,35 @@ test('admin create franchise', async () => {
     expect(franchiseRes.body.admins).toHaveLength(1);
 });
 
+test('Get frachises', async () => {
+
+});
+
+test('create store', async () => {
+    let newUser = await createAdminUser();
+    const loginRes = await request(app).put('/api/auth').send(newUser);
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+    // console.log('Login response:', loginRes.body);
+
+
+    const authToken = loginRes.body.token;
+    const franchiseName = randomName();
+
+    const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${authToken}`)
+        .send({
+            name: franchiseName,
+            admins: [{ email: newUser.email }],
+        });
+    const franchiseId = franchiseRes.body.id;
+    const storeName = randomName();
+    const storeRes = await request(app)
+        .post(`/api/franchise/${franchiseId}/store`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: storeName });
+
+});
+
+
+
 
