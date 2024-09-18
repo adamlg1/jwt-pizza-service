@@ -31,7 +31,6 @@ test('admin create franchise', async () => {
     const loginRes = await request(app).put('/api/auth').send(user);
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
-    // console.log('Login response:', loginRes.body);
 
 
     const authToken = loginRes.body.token;
@@ -52,11 +51,36 @@ test('Get frachises', async () => {
 });
 
 test('create store', async () => {
+    // let newUser = await createAdminUser();
+    // const loginRes = await request(app).put('/api/auth').send(newUser);
+
+    // const authToken = loginRes.body.token;
+    // const franchiseName = randomName();
+
+    // const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${authToken}`)
+    //     .send({
+    //         name: franchiseName,
+    //         admins: [{ email: newUser.email }],
+    //     });
+    // const franchiseId = franchiseRes.body.id;
+    // const storeName = randomName();
+    // const storeRes = await request(app)
+    //     .post(`/api/franchise/${franchiseId}/store`)
+    //     .set('Authorization', `Bearer ${authToken}`)
+    //     .send({ name: storeName });
+    const { authToken, franchiseId, storeId, storeRes, storeName } = await createStore();
+
+
+    expect(storeRes.statusCode).toBe(200);
+    expect(storeRes.body).toHaveProperty('id');
+    expect(storeRes.body).toHaveProperty('name', storeName);
+    expect(storeRes.body).toHaveProperty('franchiseId', franchiseId);
+
+});
+
+async function createStore() {
     let newUser = await createAdminUser();
     const loginRes = await request(app).put('/api/auth').send(newUser);
-    // expect(loginRes.status).toBe(200);
-    // expect(loginRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
-
 
     const authToken = loginRes.body.token;
     const franchiseName = randomName();
@@ -73,12 +97,28 @@ test('create store', async () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: storeName });
 
-    expect(storeRes.statusCode).toBe(200);
-    expect(storeRes.body).toHaveProperty('id');
-    expect(storeRes.body).toHaveProperty('name', storeName);
-    expect(storeRes.body).toHaveProperty('franchiseId', franchiseId);
+    return {
+        authToken,
+        franchiseId,
+        storeId: storeRes.body.id,
+        storeRes,
+        storeName
+    };
+}
 
+test('delete store', async () => {
+    const { authToken, franchiseId, storeId } = await createStore();
+    const deleteRes = await request(app)
+        .delete(`/api/franchise/${franchiseId}/store/${storeId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+    expect(deleteRes.statusCode).toBe(200);
+    expect(deleteRes.body).toHaveProperty('message', 'store deleted');
 });
+
+
+
+
 
 
 
