@@ -5,6 +5,7 @@ const { DB } = require('../database/database.js');
 const { Role } = require('../model/model.js');
 const authRouter = require('./authRouter');
 
+//todo: make login function
 
 function randomName() {
     return Math.random().toString(36).substring(2, 12);
@@ -46,30 +47,61 @@ test('admin create franchise', async () => {
     expect(franchiseRes.body.admins).toHaveLength(1);
 });
 
+async function createFranchise(user) {
+    const loginRes = await request(app).put('/api/auth').send(user);
+
+    const authToken = loginRes.body.token;
+    const franchiseName = randomName();
+
+    const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${authToken}`)
+        .send({
+            name: franchiseName,
+            admins: [{ email: user.email }],
+        });
+
+    return {
+        authToken,
+        franchiseRes
+    }
+
+}
+
+test('Delete Franchise', async () => {
+    testUser = await createAdminUser();
+    const { authToken, franchiseRes } = await createFranchise(testUser);
+    const franchiseID = franchiseRes.body.id;
+
+    let franchise = await DB.getFranchise({ id: franchiseID });
+    console.log(franchise);
+
+    expect(franchise.admins).not.toHaveLength(0);
+
+
+    const deleteRes = await request(app)
+        .delete(`/api/franchise/${franchiseID}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+    expect(deleteRes.statusCode).toBe(200);
+    expect(deleteRes.body).toHaveProperty('message', 'franchise deleted');
+
+    const deletedFranchise = await DB.getFranchise(franchise);
+    expect(deletedFranchise).toEqual({
+        id: franchiseID,
+        admins: [],
+        stores: []
+    });
+    // expect(franchise2.admins).toHaveLength(0);
+    // expect(franchise2.stores).toHaveLength(0);
+    // expect(franchise2).toBeNull();
+});
+
+
 test('Get frachises', async () => {
 
 });
 
 test('create store', async () => {
-    // let newUser = await createAdminUser();
-    // const loginRes = await request(app).put('/api/auth').send(newUser);
-
-    // const authToken = loginRes.body.token;
-    // const franchiseName = randomName();
-
-    // const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${authToken}`)
-    //     .send({
-    //         name: franchiseName,
-    //         admins: [{ email: newUser.email }],
-    //     });
-    // const franchiseId = franchiseRes.body.id;
-    // const storeName = randomName();
-    // const storeRes = await request(app)
-    //     .post(`/api/franchise/${franchiseId}/store`)
-    //     .set('Authorization', `Bearer ${authToken}`)
-    //     .send({ name: storeName });
     const { authToken, franchiseId, storeId, storeRes, storeName } = await createStore();
-
 
     expect(storeRes.statusCode).toBe(200);
     expect(storeRes.body).toHaveProperty('id');
