@@ -157,6 +157,34 @@ test('delete store', async () => {
     expect(deleteRes.body).toHaveProperty('message', 'store deleted');
 });
 
+test('delete improper auth', async () => {
+    const { franchiseId, storeId } = await createStore();
+
+    const deleteRes = await request(app)
+        .delete(`/api/franchise/${franchiseId}/store/${storeId}`)
+        .set('Authorization', `Bearer Please don't accept, fakeToken`);
+
+    expect(deleteRes.statusCode).not.toBe(200);
+
+});
+
+test('create franchise improper auth :/', async () => {
+    const franchiseName = randomName();
+
+    const createRes = await request(app).post('/api/franchise')
+        .set('Authorization', `Bearer fake token lolz`)
+        .send({
+            name: franchiseName,
+            admins: [{ email: user.email }]
+        });
+
+    expect(createRes.statusCode).not.toBe(200);
+    expect(createRes.body).toHaveProperty('message', 'unauthorized');
+
+});
+
+
+
 
 
 
