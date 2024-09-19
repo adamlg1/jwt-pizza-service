@@ -90,13 +90,22 @@ test('Delete Franchise', async () => {
         admins: [],
         stores: []
     });
-    // expect(franchise2.admins).toHaveLength(0);
-    // expect(franchise2.stores).toHaveLength(0);
-    // expect(franchise2).toBeNull();
+    //don't check for toBeNull because of how getFranchise returns
 });
 
 
 test('Get frachises', async () => {
+    testUser = await createAdminUser();
+    const { authToken, franchiseRes } = await createFranchise(testUser);
+    await createFranchise(testUser);
+    await createFranchise(testUser);
+    const franchiseID = franchiseRes.body.id;
+
+    const getResponse = await request(app)
+        .get(`/api/franchise/${testUser.id}`).set('Authorization', `Bearer ${authToken}`).expect(200);
+    let userFranchises = getResponse.body;
+    expect(userFranchises).not.toBe(null);
+    expect(Array.isArray(userFranchises)).toBe(true);
 
 });
 
