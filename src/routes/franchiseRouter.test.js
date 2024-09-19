@@ -184,6 +184,31 @@ test('create franchise improper auth :/', async () => {
 });
 
 
+async function loginUser(user) {
+    const loginRes = await request(app).put('/api/auth').send(user);
+
+    const authToken = loginRes.body.token;
+    return authToken;
+}
+
+test(('admin add menu item'), async () => {
+    const newPizza = {
+        title: randomName(),
+        description: randomName(),
+        price: Math.random(),
+        image: randomName()
+    };
+    let adminUser = await createAdminUser();
+    const authToken = await loginUser(adminUser);
+
+    const addNewItemRes = await request(app)
+        .put('/api/order/menu')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(newPizza);
+    // console.log(addNewItemRes);
+    expect(addNewItemRes.statusCode).toBe(200);
+
+});
 
 
 

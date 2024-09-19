@@ -27,7 +27,7 @@ test('logout', async () => {
   const newUser = { name: 'lauri', email: 'gojazz@test.com', password: 'suomi' };
   const registerRes = await request(app).post('/api/auth').send(newUser).expect(200);
   // expect(registerRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
-  lauriAuthToken = registerRes.body.token;
+  let lauriAuthToken = registerRes.body.token;
   const logoutRes = await request(app)
     .delete('/api/auth')
     .set('Authorization', `Bearer ${lauriAuthToken}`)
