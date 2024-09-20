@@ -20,8 +20,13 @@ test('login', async () => {
   const loginRes = await request(app).put('/api/auth').send(testUser);
   expect(loginRes.status).toBe(200);
   expect(loginRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+  //modified to get lint to stop being so annoying
+  // const { password, ...user } = { ...testUser, roles: [{ role: 'diner' }] };
+  const user = {
+    email: testUser.email,
+    roles: [{ role: 'diner' }]
+  };
 
-  const { password, ...user } = { ...testUser, roles: [{ role: 'diner' }] };
   expect(loginRes.body.user).toMatchObject(user);
 });
 
