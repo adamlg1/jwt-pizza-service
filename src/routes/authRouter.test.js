@@ -3,6 +3,7 @@ const app = require('../service');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
+let userId;
 
 if (process.env.VSCODE_INSPECTOR_OPTIONS) {
   jest.setTimeout(60 * 1000 * 5); // 5 minutes
@@ -12,6 +13,7 @@ beforeAll(async () => {
   testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
   const registerRes = await request(app).post('/api/auth').send(testUser);
   testUserAuthToken = registerRes.body.token;
+  userId = registerRes.body.user.id;
 });
 
 test('login', async () => {
@@ -38,4 +40,12 @@ test('logout', async () => {
   const protectedRes = await request(app).get('/api/auth/protected-endpoint')
     .set('Authorization', `Bearer ${lauriAuthToken}`).expect(404);
 
+});
+
+test('update user', async () => {
+  const updateUserRes = await request(app)
+    .put('/api/auth/' + userId)
+    .set('Authorization', `Bearer ${testUserAuthToken}`)
+    .send({ email: 'plzchangemyemail@gojazz.click', password: 'plznewpassword' });
+  expect(updateUserRes.status).toBe(200);
 });
