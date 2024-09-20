@@ -210,97 +210,70 @@ test(('admin add menu item'), async () => {
 
 });
 
-test('create order test', async () => {
-    // let adminUser = user;
-    // let authToken = await loginUser(adminUser);
-    const loginRes = await request(app).put('/api/auth').send(user);
+function getMenuIdByTitle(menu, title) {
+    const menuItem = menu.find(item => item.title === title);
+    return menuItem ? menuItem.id : null; // Returns the id or null if not found
+}
 
-    const authToken = loginRes.body.token;
+
+test('create order test', async () => {
+    let newUser = await createAdminUser();
+    console.log("admin user", newUser);
+    const loginRes = await request(app).put('/api/auth').send(newUser);
+
+    let orderAuthToken = loginRes.body.token;
+    console.log("authtoken login", orderAuthToken);
     const franchiseName = randomName();
 
-    const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${authToken}`)
+    const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${orderAuthToken}`)
         .send({
             name: franchiseName,
-            admins: [{ email: user.email }],
+            admins: [{ email: newUser.email }]
         });
     const franchiseId = franchiseRes.body.id;
     const storeName = randomName();
     const storeRes = await request(app)
         .post(`/api/franchise/${franchiseId}/store`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ name: storeName });
+        .set('Authorization', `Bearer ${orderAuthToken}`)
+        .send({ name: storeName }).expect(200);
 
-    const storeId = storeRes.body.id;
-    // dinerId: adminUser.id,
+    let storeId = storeRes.body.id;
+
+    const menuItem = {
+        title: randomName(),
+        description: randomName(),
+        price: Math.random() * 100,
+        image: Math.random()
+    };
+
+    const addMenuItemRes = await request(app)
+        .put('/api/order/menu')
+        .set('Authorization', `Bearer ${orderAuthToken}`)
+        .send(menuItem).expect(200);
+
+    const menu = addMenuItemRes.body;
+    // console.log("menu", menu);
+    menuId = 0;
+    console.log("menuId", menuId);
+
     const order = {
-        franchiseId: franchiseId,
-        storeId: storeId,
+        franchiseId: 77,
+        storeId: 77,
         items: [
             {
                 menuId: 1,
                 description: randomName(),
-                price: Math.random(),
+                price: Math.random()
             }
         ]
     }
 
     const orderRes = await request(app)
         .post('/api/order')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${orderAuthToken}`)
         .send(order);
 
     // console.log(orderRes);
     expect(orderRes.status).toBe(200);
 });
 
-
-// test('create order test', async () => {
-//     // Step 1: Create an admin user and log them in
-//     let adminUser = await createAdminUser();
-//     let authToken = await loginUser(adminUser);
-
-//     // Step 2: Create a franchise for the admin user
-//     const { franchiseRes } = await createFranchise(adminUser);
-//     const franchiseId = franchiseRes.body.id;
-
-//     // Step 3: Create a store under the created franchise
-//     const { storeId } = await createStore(franchiseId, authToken);
-
-//     // Step 4: Add a menu item to the store
-//     const menuItem = {
-//         title: randomName(),
-//         description: randomName(),
-//         price: Math.random() * 100,
-//     };
-
-//     const addMenuItemRes = await request(app)
-//         .put('/api/order/menu')
-//         .set('Authorization', `Bearer ${authToken}`)
-//         .send(menuItem);
-
-//     const menuId = addMenuItemRes.body.id;
-
-//     const order = {
-//         franchiseId: franchiseId,
-//         storeId: storeId,
-//         items: [
-//             {
-//                 menuId: menuId,  // Use the correct menuId from the response
-//                 description: menuItem.description,
-//                 price: menuItem.price,
-//             }
-//         ]
-//     };
-
-//     const orderRes = await request(app)
-//         .post('/api/order')
-//         .set('Authorization', `Bearer ${authToken}`)
-//         .send(order);
-
-//     console.log(orderRes.body);
-
-// \    expect(orderRes.status).toBe(200);
-//     expect(orderRes.body).toHaveProperty('orderId'); // Ensure the response includes the generated orderId
-//     expect(orderRes.body.items).toHaveLength(1);     // Ensure the order has 1 item
-//     expect(orderRes.body.items[0]).toHaveProperty('menuId', menuId); // Ensure menuId matches
-// });
