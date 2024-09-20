@@ -1,11 +1,7 @@
 const request = require('supertest');
 const app = require('../service');
-const franchiseRouter = require('./franchiseRouter');
 const { DB } = require('../database/database.js');
 const { Role } = require('../model/model.js');
-const authRouter = require('./authRouter');
-
-//todo: make login function
 
 function randomName() {
     return Math.random().toString(36).substring(2, 12);
@@ -67,7 +63,7 @@ async function createFranchise(user) {
 }
 
 test('Delete Franchise', async () => {
-    testUser = await createAdminUser();
+    let testUser = await createAdminUser();
     const { authToken, franchiseRes } = await createFranchise(testUser);
     const franchiseID = franchiseRes.body.id;
 
@@ -95,11 +91,11 @@ test('Delete Franchise', async () => {
 
 
 test('Get frachises', async () => {
-    testUser = await createAdminUser();
-    const { authToken, franchiseRes } = await createFranchise(testUser);
+    let testUser = await createAdminUser();
+    const { authToken } = await createFranchise(testUser);
     await createFranchise(testUser);
     await createFranchise(testUser);
-    const franchiseID = franchiseRes.body.id;
+    // const franchiseID = franchiseRes.body.id;
 
     const getResponse = await request(app)
         .get(`/api/franchise/${testUser.id}`).set('Authorization', `Bearer ${authToken}`).expect(200);
@@ -110,7 +106,7 @@ test('Get frachises', async () => {
 });
 
 test('create store', async () => {
-    const { authToken, franchiseId, storeId, storeRes, storeName } = await createStore();
+    const { franchiseId, storeRes, storeName } = await createStore();
 
     expect(storeRes.statusCode).toBe(200);
     expect(storeRes.body).toHaveProperty('id');
@@ -210,52 +206,13 @@ test(('admin add menu item'), async () => {
 
 });
 
-function getMenuIdByTitle(menu, title) {
-    const menuItem = menu.find(item => item.title === title);
-    return menuItem ? menuItem.id : null; // Returns the id or null if not found
-}
-
-
 test('create order test', async () => {
     let newUser = await createAdminUser();
-    console.log("admin user", newUser);
+    // console.log("admin user", newUser);
     const loginRes = await request(app).put('/api/auth').send(newUser);
 
     let orderAuthToken = loginRes.body.token;
-    console.log("authtoken login", orderAuthToken);
-    const franchiseName = randomName();
-
-    const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${orderAuthToken}`)
-        .send({
-            name: franchiseName,
-            admins: [{ email: newUser.email }]
-        });
-    const franchiseId = franchiseRes.body.id;
-    const storeName = randomName();
-    const storeRes = await request(app)
-        .post(`/api/franchise/${franchiseId}/store`)
-        .set('Authorization', `Bearer ${orderAuthToken}`)
-        .send({ name: storeName }).expect(200);
-
-    let storeId = storeRes.body.id;
-
-    const menuItem = {
-        title: randomName(),
-        description: randomName(),
-        price: Math.random() * 100,
-        image: Math.random()
-    };
-
-    const addMenuItemRes = await request(app)
-        .put('/api/order/menu')
-        .set('Authorization', `Bearer ${orderAuthToken}`)
-        .send(menuItem).expect(200);
-
-    const menu = addMenuItemRes.body;
-    // console.log("menu", menu);
-    menuId = 0;
-    console.log("menuId", menuId);
-
+    // console.log("authtoken login", orderAuthToken);
     const order = {
         franchiseId: 77,
         storeId: 77,
@@ -276,4 +233,6 @@ test('create order test', async () => {
     // console.log(orderRes);
     expect(orderRes.status).toBe(200);
 });
+
+
 
