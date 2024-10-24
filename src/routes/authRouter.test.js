@@ -5,6 +5,7 @@ const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
 let userId;
 
+
 if (process.env.VSCODE_INSPECTOR_OPTIONS) {
   jest.setTimeout(60 * 1000 * 5); // 5 minutes
 }
@@ -54,3 +55,6 @@ test('update user', async () => {
     .send({ email: 'plzchangemyemail@gojazz.click', password: 'plznewpassword' });
   expect(updateUserRes.status).toBe(200);
 });
+
+
+
