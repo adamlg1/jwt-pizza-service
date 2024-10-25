@@ -50,7 +50,7 @@ jobs:
                 user: 'root',
                 password: 'tempdbpassword',
                 database: 'pizza',
-                connectTimeout: 600000,
+                connectTimeout: 60000,
               },
               listPerPage: 10,
             },
