@@ -1,7 +1,6 @@
 const config = require('./config.js');
 const os = require('os');
 
-
 class Metrics {
     constructor() {
         this.totalRequests = 0;
@@ -20,7 +19,7 @@ class Metrics {
     }
 
     startSendingMetrics(interval = 10000) {
-        setInterval(() => {
+        this.timer = setInterval(() => {
             this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
             this.sendMetricToGrafana('request', 'post', 'total', this.requestCounts.POST);
             this.sendMetricToGrafana('request', 'get', 'total', this.requestCounts.GET);
@@ -34,7 +33,6 @@ class Metrics {
             this.sendMetricToGrafana('auth', 'all', 'failure', this.authFailures);
             this.sendMetricToGrafana('order', 'all', 'revenue', this.revenuePerMin);
             this.sendMetricToGrafana('order', 'all', 'failure', this.creationFailure);
-            this.sendMetricToGrafana('order', 'all', 'latency', this.creationLatency);
 
             if (this.creationLatency.length > 0) {
                 const averageLatency = this.creationLatency.reduce((a, b) => a + b, 0) / this.creationLatency.length;
@@ -50,6 +48,7 @@ class Metrics {
             this.requestCounts[method]++;
         }
     }
+
     sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
         const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
@@ -70,10 +69,9 @@ class Metrics {
             });
     }
 
-
     getCpuUsagePercentage() {
         const cpuUsage = os.loadavg()[0] / os.cpus().length;
-        return cpuUsage.toFixed(2) * 100;
+        return (cpuUsage * 100).toFixed(2); // Ensure this returns a percentage
     }
 
     getMemoryUsagePercentage() {
@@ -87,29 +85,32 @@ class Metrics {
     failedToCreate() {
         this.creationFailure++;
     }
+
     logout() {
         this.activeUsers--;
     }
+
     login() {
         this.activeUsers++;
         this.authSuccesses++;
     }
+
     get() {
-        this.requestCounts.GET++;
-        this.totalRequests++;
+        this.incrementRequests('GET');
     }
+
     delete() {
-        this.requestCounts.DELETE++;
-        this.totalRequests++;
+        this.incrementRequests('DELETE');
     }
+
     put() {
-        this.requestCounts.PUT++;
-        this.totalRequests++;
+        this.incrementRequests('PUT');
     }
+
     post() {
-        this.requestCounts.POST++;
-        this.totalRequests++;
+        this.incrementRequests('POST');
     }
+
     orderPizza(amount, latency) {
         this.pizzasSold++;
         this.revenuePerMin += amount;
@@ -119,9 +120,6 @@ class Metrics {
     stopMetrics() {
         clearInterval(this.timer);
     }
-
-
-
 }
 
 const metrics = new Metrics();
