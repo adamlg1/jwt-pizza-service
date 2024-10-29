@@ -51,23 +51,23 @@ class Metrics {
         }
     }
 
-    sendMetricsPeriodically(period) {
-        const timer = setInterval(() => {
-            try {
-                const buf = new MetricBuilder();
-                httpMetrics(buf);
-                systemMetrics(buf);
-                userMetrics(buf);
-                purchaseMetrics(buf);
-                authMetrics(buf);
+    // sendMetricsPeriodically(period) {
+    //     const timer = setInterval(() => {
+    //         try {
+    //             const buf = new MetricBuilder();
+    //             httpMetrics(buf);
+    //             systemMetrics(buf);
+    //             userMetrics(buf);
+    //             purchaseMetrics(buf);
+    //             authMetrics(buf);
 
-                const metrics = buf.toString('\n');
-                this.sendMetricToGrafana(metrics);
-            } catch (error) {
-                console.log('Error sending metrics', error);
-            }
-        }, period);
-    }
+    //             const metrics = buf.toString('\n');
+    //             this.sendMetricToGrafana(metrics);
+    //         } catch (error) {
+    //             console.log('Error sending metrics', error);
+    //         }
+    //     }, period);
+    // }
 
     sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
         const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
