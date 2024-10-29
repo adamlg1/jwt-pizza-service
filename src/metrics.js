@@ -1,24 +1,78 @@
 const config = require('./config.js');
+const os = require('os');
+
 
 class Metrics {
     constructor() {
         this.totalRequests = 0;
+        this.requestCounts = { GET: 0, POST: 0, DELETE: 0, PUT: 0 };
+        this.authSuccesses = 0;
+        this.authFailures = 0;
+        this.pizzasSold = 0;
+        this.revenuePerMin = 0;
+        this.creationLatency = [];
+        this.creationFailure = 0;
+        this.pizzasOrdered = 0;
+        this.activeUsers = 0;
+        this.timer = null;
 
-        // This will periodically sent metrics to Grafana
-        const timer = setInterval(() => {
-            this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
-        }, 10000);
-        timer.unref();
+        this.startSendingMetrics();
     }
 
-    incrementRequests() {
+    startSendingMetrics(interval = 10000) {
+        setInterval(() => {
+            this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
+            this.sendMetricToGrafana('request', 'post', 'total', this.requestCounts.POST);
+            this.sendMetricToGrafana('request', 'get', 'total', this.requestCounts.GET);
+            this.sendMetricToGrafana('request', 'delete', 'total', this.requestCounts.DELETE);
+            this.sendMetricToGrafana('request', 'put', 'total', this.requestCounts.PUT);
+            this.sendMetricToGrafana('cpu', 'all', 'usage', this.getCpuUsagePercentage());
+            this.sendMetricToGrafana('memory', 'all', 'usage', this.getMemoryUsagePercentage());
+            this.sendMetricToGrafana('order', 'all', 'total', this.pizzasOrdered);
+            this.sendMetricToGrafana('user', 'all', 'active', this.activeUsers);
+            this.sendMetricToGrafana('auth', 'all', 'success', this.authSuccesses);
+            this.sendMetricToGrafana('auth', 'all', 'failure', this.authFailures);
+            this.sendMetricToGrafana('order', 'all', 'revenue', this.revenuePerMin);
+            this.sendMetricToGrafana('order', 'all', 'failure', this.creationFailure);
+            this.sendMetricToGrafana('order', 'all', 'latency', this.creationLatency);
+
+            if (this.creationLatency.length > 0) {
+                const averageLatency = this.creationLatency.reduce((a, b) => a + b, 0) / this.creationLatency.length;
+                this.sendMetricToGrafana('order', 'all', 'latency', averageLatency);
+            }
+
+        }, interval);
+    }
+
+    incrementRequests(method) {
         this.totalRequests++;
+        if (this.requestCounts[method]) {
+            this.requestCounts[method]++;
+        }
+    }
+
+    sendMetricsPeriodically(period) {
+        const timer = setInterval(() => {
+            try {
+                const buf = new MetricBuilder();
+                httpMetrics(buf);
+                systemMetrics(buf);
+                userMetrics(buf);
+                purchaseMetrics(buf);
+                authMetrics(buf);
+
+                const metrics = buf.toString('\n');
+                this.sendMetricToGrafana(metrics);
+            } catch (error) {
+                console.log('Error sending metrics', error);
+            }
+        }, period);
     }
 
     sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
         const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
-        fetch(`${config.url}`, {
+        fetch(`${config.metrics.url}`, {
             method: 'post',
             body: metric,
             headers: { Authorization: `Bearer ${config.userId}:${config.apiKey}` },
@@ -34,6 +88,59 @@ class Metrics {
                 console.error('Error pushing metrics:', error);
             });
     }
+
+
+    getCpuUsagePercentage() {
+        const cpuUsage = os.loadavg()[0] / os.cpus().length;
+        return cpuUsage.toFixed(2) * 100;
+    }
+
+    getMemoryUsagePercentage() {
+        const totalMemory = os.totalmem();
+        const freeMemory = os.freemem();
+        const usedMemory = totalMemory - freeMemory;
+        const memoryUsage = (usedMemory / totalMemory) * 100;
+        return memoryUsage.toFixed(2);
+    }
+
+    failedToCreate() {
+        this.creationFailure++;
+    }
+    logout() {
+        this.activeUsers--;
+    }
+    login() {
+        this.activeUsers++;
+        this.authSuccesses++;
+    }
+    get() {
+        this.requestCounts.GET++;
+        this.totalRequests++;
+    }
+    delete() {
+        this.requestCounts.DELETE++;
+        this.totalRequests++;
+    }
+    put() {
+        this.requestCounts.PUT++;
+        this.totalRequests++;
+    }
+    post() {
+        this.requestCounts.POST++;
+        this.totalRequests++;
+    }
+    orderPizza(amount, latency) {
+        this.pizzasSold++;
+        this.revenuePerMin += amount;
+        this.creationLatency.push(latency);
+    }
+
+    stopMetrics() {
+        clearInterval(this.timer);
+    }
+
+
+
 }
 
 const metrics = new Metrics();
