@@ -15,7 +15,8 @@ class Metrics {
         this.activeUsers = 0;
         this.timer = null;
 
-        this.startSendingMetrics();
+        //this should be done in the index class
+        // this.startSendingMetrics();
     }
 
     startSendingMetrics(interval = 10000) {
