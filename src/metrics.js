@@ -56,7 +56,8 @@ class Metrics {
                 this.requestCounts.PUT++;
                 break;
             default:
-                console.warn(`Unhandled HTTP method: ${method}`);
+                console.log("not a defined http request that we can do");
+                break;
         }
         next();
 
