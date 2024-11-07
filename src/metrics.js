@@ -14,12 +14,9 @@ class Metrics {
         this.pizzasOrdered = 0;
         this.activeUsers = 0;
         this.timer = null;
-
-        //this should be done in the index class
-        // this.startSendingMetrics();
     }
 
-    startSendingMetrics(interval = 10000) {
+    sendMetricsPeriodically(interval) {
         this.timer = setInterval(() => {
             this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
             this.sendMetricToGrafana('request', 'post', 'total', this.requestCounts.POST);
@@ -43,20 +40,35 @@ class Metrics {
         }, interval);
     }
 
-    incrementRequests(method) {
+    requestTracker(req, res, next) {
         this.totalRequests++;
-        if (this.requestCounts[method]) {
-            this.requestCounts[method]++;
+        switch (req.method) {
+            case 'GET':
+                this.requestCounts.GET++;
+                break;
+            case 'POST':
+                this.requestCounts.POST++;
+                break;
+            case 'DELETE':
+                this.requestCounts.DELETE++;
+                break;
+            case 'PUT':
+                this.requestCounts.PUT++;
+                break;
+            default:
+                console.warn(`Unhandled HTTP method: ${method}`);
         }
+        next();
+
     }
 
     sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
-        const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
+        const metric = `${metricPrefix},source=${config.metrics.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
         fetch(`${config.metrics.url}`, {
             method: 'post',
             body: metric,
-            headers: { Authorization: `Bearer ${config.userId}:${config.apiKey}` },
+            headers: { Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}` },
         })
             .then((response) => {
                 if (!response.ok) {
@@ -70,9 +82,10 @@ class Metrics {
             });
     }
 
+
     getCpuUsagePercentage() {
         const cpuUsage = os.loadavg()[0] / os.cpus().length;
-        return (cpuUsage * 100).toFixed(2); // Ensure this returns a percentage
+        return (cpuUsage * 100).toFixed(2);
     }
 
     getMemoryUsagePercentage() {
@@ -96,31 +109,42 @@ class Metrics {
         this.authSuccesses++;
     }
 
-    get() {
-        this.incrementRequests('GET');
+    authSuccess() {
+        this.authSuccesses++;
     }
 
-    delete() {
-        this.incrementRequests('DELETE');
+    authFailure() {
+        this.authFailures++;
     }
 
-    put() {
-        this.incrementRequests('PUT');
+    // get() {
+    //     this.incrementRequests('GET');
+    // }
+
+    // delete() {
+    //     this.incrementRequests('DELETE');
+    // }
+
+    // put() {
+    //     this.incrementRequests('PUT');
+    // }
+
+    // post() {
+    //     this.incrementRequests('POST');
+    // }
+
+    // orderPizza(amount, latency) {
+    //     this.pizzasSold++;
+    //     this.revenuePerMin += amount;
+    //     this.creationLatency.push(latency);
+    // }
+    orderPizzas(order) {
+        this.pizzasOrdered += order.items.length;
+        for (const item of order.items) {
+            this.revenuePerMin += item.price;
+        }
     }
 
-    post() {
-        this.incrementRequests('POST');
-    }
-
-    orderPizza(amount, latency) {
-        this.pizzasSold++;
-        this.revenuePerMin += amount;
-        this.creationLatency.push(latency);
-    }
-
-    stopMetrics() {
-        clearInterval(this.timer);
-    }
 }
 
 const metrics = new Metrics();
