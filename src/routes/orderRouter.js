@@ -78,21 +78,43 @@ orderRouter.post(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    console.log("in order router :O");
     const orderReq = req.body;
     const order = await DB.addDinerOrder(req.user, orderReq);
-    // metrics.orderPizzas(order);
+
+    const startTime = Date.now();
+    console.log("started timer");
     const r = await fetch(`${config.factory.url}/api/order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
       body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
     });
     const j = await r.json();
+
+    const price = orderReq.items.reduce((total, item) => total + item.price, 0);
+    const pizzasSold = orderReq.items.length;
+
+    const endTime = Date.now();
+    console.log("ended timer");
+    const latency = endTime - startTime;
+
+
     if (r.ok) {
+      metrics.setLatency(latency);
+      metrics.addPrice(price);
+      metrics.numPizzasSold(pizzasSold);
+
       res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
     } else {
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
+      metrics.orderFailure();
     }
+
+
+    // metrics.orderPizzas(orderMetrics);
   })
 );
 
 module.exports = orderRouter;
+
+

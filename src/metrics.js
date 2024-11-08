@@ -8,14 +8,15 @@ class Metrics {
         this.authSuccesses = 0;
         this.authFailures = 0;
         this.pizzasSold = 0;
-        this.revenuePerMin = 0;
-        this.creationLatency = [];
+        this.revenue = 0;
+        this.creationLatency = 0;
         this.creationFailure = 0;
-        this.pizzasOrdered = 0;
         this.activeUsers = 0;
         this.timer = null;
+        this.requestLatency = 0;
     }
 
+    //I think it ignores the order of these, bc I tried to put all the order stuff together and it didn't work
     sendMetricsPeriodically(interval) {
         this.timer = setInterval(() => {
             this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
@@ -25,23 +26,39 @@ class Metrics {
             this.sendMetricToGrafana('request', 'put', 'total', this.requestCounts.PUT);
             this.sendMetricToGrafana('cpu', 'all', 'usage', this.getCpuUsagePercentage());
             this.sendMetricToGrafana('memory', 'all', 'usage', this.getMemoryUsagePercentage());
-            this.sendMetricToGrafana('order', 'all', 'total', this.pizzasOrdered);
             this.sendMetricToGrafana('user', 'all', 'active', this.activeUsers);
             this.sendMetricToGrafana('auth', 'all', 'success', this.authSuccesses);
             this.sendMetricToGrafana('auth', 'all', 'failure', this.authFailures);
-            this.sendMetricToGrafana('order', 'all', 'revenue', this.revenuePerMin);
+            this.sendMetricToGrafana('order', 'all', 'revenue', this.revenue);
             this.sendMetricToGrafana('order', 'all', 'failure', this.creationFailure);
+            this.sendMetricToGrafana('order', 'all', 'total', this.pizzasSold);
+            this.sendMetricToGrafana('order', 'all', 'latency', this.creationLatency);
+            this.sendMetricToGrafana('request', 'all', 'latency', this.requestLatency);
 
-            if (this.creationLatency.length > 0) {
-                const averageLatency = this.creationLatency.reduce((a, b) => a + b, 0) / this.creationLatency.length;
-                this.sendMetricToGrafana('order', 'all', 'latency', averageLatency);
-            }
+
+
+
+            // if (this.creationLatency.length > 0) {
+            //     const averageLatency = this.creationLatency.reduce((a, b) => a + b, 0) / this.creationLatency.length;
+            //     this.sendMetricToGrafana('order', 'all', 'latency', averageLatency);
+            // }
 
         }, interval);
     }
 
     requestTracker(req, res, next) {
         this.totalRequests++;
+        const startTime = Date.now();
+
+        // Capture the response finish event to calculate latency
+        res.on('finish', () => {
+            const endTime = Date.now();
+            const latency = endTime - startTime;
+            this.setRequestLatency(latency); // Accumulate the total latency
+            // If needed, you can also calculate and log average latency
+            console.log(`Request Latency: ${latency} ms`);
+        });
+
         switch (req.method) {
             case 'GET':
                 this.requestCounts.GET++;
@@ -83,6 +100,13 @@ class Metrics {
             });
     }
 
+    setLatency(latency) {
+        this.creationLatency = latency;
+    }
+    setRequestLatency(latency) {
+        this.requestLatency = latency;
+    }
+
 
     getCpuUsagePercentage() {
         const cpuUsage = os.loadavg()[0] / os.cpus().length;
@@ -97,15 +121,17 @@ class Metrics {
         return memoryUsage.toFixed(2);
     }
 
-    failedToCreate() {
+    orderFailure() {
         this.creationFailure++;
     }
 
     logout() {
+        console.log("logout");
         this.activeUsers--;
     }
 
     login() {
+        // console.log("login", this.activeUsers);
         this.activeUsers++;
         this.authSuccesses++;
     }
@@ -118,33 +144,32 @@ class Metrics {
         this.authFailures++;
     }
 
-    // get() {
-    //     this.incrementRequests('GET');
+    //failed experiment
+
+    // orderPizzas(order) {
+    //     this.pizzasSold += order.items.length;
+    //     //tried pizza, item,  nothing gets order to show up
+    //     let totalRevenue = 0
+    //     for (const item of order.items) {
+    //         console.log("item price: ", item.price);
+    //         totalRevenue += item.price;
+    //     }
+
+    //     this.revenue += totalRevenue;
     // }
 
-    // delete() {
-    //     this.incrementRequests('DELETE');
-    // }
+    // try to separate them?
 
-    // put() {
-    //     this.incrementRequests('PUT');
-    // }
-
-    // post() {
-    //     this.incrementRequests('POST');
-    // }
-
-    // orderPizza(amount, latency) {
-    //     this.pizzasSold++;
-    //     this.revenuePerMin += amount;
-    //     this.creationLatency.push(latency);
-    // }
-    orderPizzas(order) {
-        this.pizzasOrdered += order.items.length;
-        for (const item of order.items) {
-            this.revenuePerMin += item.price;
-        }
+    addPrice(price) {
+        console.log('Price metric updated with:', price);
+        this.revenue += price;
     }
+    numPizzasSold(numPizzasSold) {
+        console.log('Pizzas sold metric updated with:', numPizzasSold);
+
+        this.pizzasSold += numPizzasSold;
+    }
+
 
 }
 
