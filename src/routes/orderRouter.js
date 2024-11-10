@@ -4,6 +4,7 @@ const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require('../metrics.js');
+const logger = require('../logger.js');
 
 const orderRouter = express.Router();
 
@@ -103,11 +104,13 @@ orderRouter.post(
       metrics.setLatency(latency);
       metrics.addPrice(price);
       metrics.numPizzasSold(pizzasSold);
+      logger.factoryLogger({ order, r: j });
 
       res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
     } else {
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
       metrics.orderFailure();
+      logger.exceptionLogger({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
     }
 
 
