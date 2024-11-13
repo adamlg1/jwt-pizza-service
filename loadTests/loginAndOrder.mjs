@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved */
 import { sleep, check, group, fail } from 'k6';
 import http from 'k6/http';
 
