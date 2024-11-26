@@ -82,6 +82,7 @@ authRouter.put('/chaos/:state', authRouter.authenticateToken, (req, res) => {
   if (state === 'true') {
     res.json({ message: 'Chaos enabled' });
   } else if (state === 'false') {
+    enableChaos = false;
     res.json({ message: 'Chaos disabled' });
   } else {
     res.status(400).json({ message: 'Invalid chaos state' });
