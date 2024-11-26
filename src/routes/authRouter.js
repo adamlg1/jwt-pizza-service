@@ -81,6 +81,7 @@ authRouter.put(
   '/chaos/:state',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    console.log("user from the request", req.user)
     if (!req.user.isRole(Role.Admin)) {
       throw new Error('unknown endpoint');
     }
