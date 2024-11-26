@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../service');
 
+
 //tried changing db password to get this to work...
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
@@ -17,7 +18,6 @@ beforeAll(async () => {
   const registerRes = await request(app).post('/api/auth').send(testUser);
   testUserAuthToken = registerRes.body.token;
   userId = registerRes.body.user.id;
-  enableChaos = false;
 
 });
 

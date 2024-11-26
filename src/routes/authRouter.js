@@ -64,6 +64,18 @@ async function setAuthUser(req, res, next) {
 }
 
 
+
+
+// Authenticate token
+authRouter.authenticateToken = (req, res, next) => {
+  if (!req.user) {
+    metrics.authFailure();
+    return res.status(401).send({ message: 'unauthorized' });
+  }
+  metrics.authSuccess();
+  next();
+};
+
 //chaos testing :/
 authRouter.put(
   '/chaos/:state',
@@ -77,16 +89,6 @@ authRouter.put(
     res.json({ chaos: enableChaos });
   })
 );
-
-// Authenticate token
-authRouter.authenticateToken = (req, res, next) => {
-  if (!req.user) {
-    metrics.authFailure();
-    return res.status(401).send({ message: 'unauthorized' });
-  }
-  metrics.authSuccess();
-  next();
-};
 
 // register
 authRouter.post(
