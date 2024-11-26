@@ -77,19 +77,17 @@ authRouter.authenticateToken = (req, res, next) => {
 };
 
 //chaos testing :/
-authRouter.put(
-  '/chaos/:state',
-  authRouter.authenticateToken,
-  asyncHandler(async (req, res) => {
-    console.log("user from the request", req.user)
-    if (!req.user.isRole(Role.Admin)) {
-      throw new Error('unknown endpoint');
-    }
+authRouter.put('/chaos/:state', authRouter.authenticateToken, (req, res) => {
+  const state = req.params.state;
+  if (state === 'true') {
+    res.json({ message: 'Chaos enabled' });
+  } else if (state === 'false') {
+    res.json({ message: 'Chaos disabled' });
+  } else {
+    res.status(400).json({ message: 'Invalid chaos state' });
+  }
+});
 
-    enableChaos = req.params.state === 'true';
-    res.json({ chaos: enableChaos });
-  })
-);
 
 // register
 authRouter.post(
