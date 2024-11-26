@@ -11,6 +11,7 @@ let user;
 
 beforeAll(async () => {
     user = await createAdminUser();
+    enableChaos = false;
 });
 
 async function createAdminUser() {

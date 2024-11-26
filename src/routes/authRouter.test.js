@@ -17,6 +17,8 @@ beforeAll(async () => {
   const registerRes = await request(app).post('/api/auth').send(testUser);
   testUserAuthToken = registerRes.body.token;
   userId = registerRes.body.user.id;
+  enableChaos = false;
+
 });
 
 test('login', async () => {
