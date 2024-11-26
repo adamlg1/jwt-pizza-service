@@ -4,10 +4,17 @@ const config = require('../config.js');
 const { asyncHandler } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
 const metrics = require('../metrics.js');
+const logger = require('../logger.js');
 
 const authRouter = express.Router();
+let enableChaos = false;
 
 authRouter.endpoints = [
+  {
+    method: 'PUT',
+    path: '/chaos/:state',
+    response: { chaos: true }
+  },
   {
     method: 'POST',
     path: '/api/auth',
@@ -56,6 +63,21 @@ async function setAuthUser(req, res, next) {
   next();
 }
 
+
+//chaos testing :/
+authRouter.put(
+  '/chaos/:state',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    if (!req.user.isRole(Role.Admin)) {
+      throw new StatusCodeError('unknown endpoint', 404);
+    }
+
+    enableChaos = req.params.state === 'true';
+    res.json({ chaos: enableChaos });
+  })
+);
+
 // Authenticate token
 authRouter.authenticateToken = (req, res, next) => {
   if (!req.user) {
@@ -82,10 +104,16 @@ authRouter.post(
   })
 );
 
+//think i only need to try chaos testing on one for the assignment?
 // login
 authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
+    if (enableChaos) {
+      metrics.authFailure();
+      logger.exceptionLogger({ route: 'login', message: 'chaos testing' });
+      return res.status(401).json({ message: 'chaos assignment' });
+    }
     const { email, password } = req.body;
     const user = await DB.getUser(email, password);
     const auth = await setAuth(user);
